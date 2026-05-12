@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Navbar() {
   return (
     <nav
@@ -10,6 +12,12 @@ export function Navbar() {
         </h1>
 
         <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-2 text-xs text-zinc-300 sm:justify-end sm:gap-x-6 sm:text-sm">
+          <Link
+            href="/guides"
+            className="whitespace-nowrap transition hover:text-white"
+          >
+            Guides
+          </Link>
           <a
             href="#trending"
             className="whitespace-nowrap transition hover:text-white"

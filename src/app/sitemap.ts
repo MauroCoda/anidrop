@@ -6,6 +6,7 @@ import {
 } from "@/src/lib/anilist";
 import { animeDetailPath } from "@/src/lib/slugify";
 import { getSiteUrl } from "@/src/lib/site";
+import { getGuideSlugs } from "@/src/lib/guides";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
@@ -20,7 +21,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 1,
     },
+    {
+      url: new URL("/guides", base).href,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
   ];
+
+  const guideEntries: MetadataRoute.Sitemap = getGuideSlugs().map((slug) => ({
+    url: new URL(`/guides/${slug}`, base).href,
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.75,
+  }));
 
   try {
     const [trending, season] = await Promise.all([
@@ -43,8 +57,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
 
-    return [...home, ...animeEntries];
+    return [...home, ...guideEntries, ...animeEntries];
   } catch {
-    return home;
+    return [...home, ...guideEntries];
   }
 }

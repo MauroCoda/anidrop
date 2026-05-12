@@ -180,6 +180,74 @@ export async function searchAnime(
   return media.map(mapMedia);
 }
 
+const GENRE_POPULAR_QUERY = `
+  query GenrePopular($genre: String, $perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      media(type: ANIME, genre: $genre, sort: POPULARITY_DESC) {
+        id
+        title {
+          romaji
+          english
+        }
+        coverImage {
+          large
+        }
+        genres
+        averageScore
+        format
+        status
+        seasonYear
+        startDate {
+          year
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Popular anime tagged with a single AniList genre (e.g. "Action", "Romance").
+ */
+export async function getPopularAnimeByGenre(
+  genre: string,
+  perPage = 16,
+): Promise<TrendingAnime[]> {
+  const g = genre.trim();
+  if (!g) {
+    return [];
+  }
+
+  const res = await fetch(ANILIST_API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      query: GENRE_POPULAR_QUERY,
+      variables: { genre: g, perPage },
+    }),
+    next: { revalidate: 3600 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`AniList request failed (${res.status})`);
+  }
+
+  const json = (await res.json()) as PageQueryResponse;
+
+  if (json.errors?.length) {
+    throw new Error(json.errors.map((e) => e.message).join("; "));
+  }
+
+  const media = json.data?.Page?.media;
+  if (!media?.length) {
+    return [];
+  }
+
+  return media.map(mapMedia);
+}
+
 /** AniList catalogue season + year for the current seasonal window. */
 export function getCurrentSeasonYear(): { season: string; year: number } {
   const d = new Date();
