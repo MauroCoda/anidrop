@@ -90,11 +90,17 @@ export function AnimeAISections({
         const body = (await res.json().catch(() => null)) as {
           error?: string;
           details?: string;
+          generatedContent?: AnimeAIContent;
           content?: AnimeAIContent;
-          source?: string;
+          savedToSupabase?: boolean;
+          supabaseError?: string | null;
+          cache?: { status?: string };
         } | null;
 
-        if (!res.ok || !body?.content) {
+        const generated =
+          body?.generatedContent ?? body?.content ?? undefined;
+
+        if (!res.ok || !generated) {
           const msg =
             typeof body?.error === "string"
               ? body.error
@@ -105,18 +111,26 @@ export function AnimeAISections({
           return;
         }
 
-        const c = body.content;
+        const c = generated;
         setFields({
           ai_summary: c.ai_summary,
           why_watch: c.why_watch,
           perfect_if_you_like: c.perfect_if_you_like,
         });
-        setPersistedAfterWrite(true);
 
-        const cacheStatus = (body as { cache?: { status?: string } }).cache
-          ?.status;
-        if (cacheStatus === "ok" || cacheStatus === "hit") {
+        const saved = body.savedToSupabase === true;
+        setPersistedAfterWrite(saved);
+
+        const cacheStatus = body.cache?.status;
+        if (
+          saved &&
+          (cacheStatus === "ok" || cacheStatus === "hit")
+        ) {
           router.refresh();
+        } else if (!saved && typeof body.supabaseError === "string" && body.supabaseError) {
+          setError(
+            `Generated on the server but not saved to Supabase: ${body.supabaseError}`,
+          );
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Request failed");

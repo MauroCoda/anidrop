@@ -52,6 +52,11 @@ create index if not exists anime_cache_popularity_idx
 
 alter table public.anime_cache enable row level security;
 
+-- If INSERT/UPDATE fails with permission denied or RLS errors, confirm the grants
+-- and policies below exist for roles anon and authenticated. For local dev only
+-- (never production), you may temporarily run:
+--   ALTER TABLE public.anime_cache DISABLE ROW LEVEL SECURITY;
+
 -- Public read (catalog pages once wired to cache)
 create policy "anime_cache_select_public"
   on public.anime_cache

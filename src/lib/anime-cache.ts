@@ -9,7 +9,7 @@ const TABLE = "anime_cache" as const;
 
 export type UpsertAnimeCacheResult =
   | { ok: true; row: AnimeCacheRow }
-  | { ok: false; message: string; code?: string };
+  | { ok: false; message: string; code?: string; details?: string; hint?: string };
 
 function supabaseOrNull() {
   if (!isSupabaseConfigured()) {
@@ -117,12 +117,15 @@ export async function getCachedAnimeById(
     .maybeSingle();
 
   if (error) {
+    console.error("[anime_cache] getCachedAnimeById failed", {
+      id: numericId,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     return null;
   }
-  return mapRow(data);
-}
-
-export async function getCachedAnimeBySlug(
   slug: string,
 ): Promise<AnimeCacheRow | null> {
   noStore();
@@ -149,6 +152,56 @@ function omitUndefined(record: Record<string, unknown>): Record<string, unknown>
   );
 }
 
+/** Stable slug for AniList-backed rows (until you add human slugs). */
+export function animeCacheSlugForAnilistId(id: number): string {
+  return `anime-${id}`;
+}
+
+/**
+ * Full row for `anime_cache` upsert after OpenAI — every column required by the
+ * API contract is set explicitly (avoids PostgREST merge omitting AI fields).
+ */
+export function buildAnimeCacheUpsertRow(
+  anime: AnimeDetail,
+  ai: AnimeAIContent,
+): AnimeCacheUpsert {
+  const numericId = Math.trunc(Number(anime.id));
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error(`Invalid anime id for cache upsert: ${anime.id}`);
+  }
+  const now = new Date().toISOString();
+  const slug = animeCacheSlugForAnilistId(numericId);
+  const trailer_site = anime.trailerYoutubeId ? "youtube" : null;
+  const trailer_id = anime.trailerYoutubeId ?? null;
+
+  return {
+    id: numericId,
+    slug,
+    title_romaji: anime.titleRomaji ?? null,
+    title_english: anime.title ?? null,
+    cover_image: anime.coverImage?.trim() ? anime.coverImage.trim() : null,
+    banner_image: anime.bannerImage?.trim() || null,
+    description: anime.description ?? null,
+    genres: Array.isArray(anime.genres) ? [...anime.genres] : [],
+    average_score: anime.averageScore ?? null,
+    popularity: anime.popularity ?? null,
+    format: anime.format ?? null,
+    status: anime.status ?? null,
+    episodes: anime.episodes ?? null,
+    season: anime.season ?? null,
+    season_year: anime.seasonYear ?? null,
+    trailer_site,
+    trailer_id,
+    ai_summary: ai.ai_summary,
+    why_watch: ai.why_watch,
+    perfect_if_you_like: ai.perfect_if_you_like,
+    seo_title: ai.seo_title,
+    seo_description: ai.seo_description,
+    ai_updated_at: now,
+    updated_at: now,
+  };
+}
+
 export async function upsertAnimeCache(
   anime: AnimeCacheUpsert,
 ): Promise<UpsertAnimeCacheResult> {
@@ -165,23 +218,40 @@ export async function upsertAnimeCache(
   const payload: Record<string, unknown> = omitUndefined({
     ...anime,
     genres: anime.genres ?? [],
-    updated_at: now,
+    updated_at: anime.updated_at ?? now,
   });
   delete payload.created_at;
-  delete payload.updated_at;
 
   const { data, error } = await supabase
     .from(TABLE)
-    .upsert(payload, { onConflict: "id", defaultToNull: false })
+    .upsert(payload, { onConflict: "id" })
     .select("*")
     .single();
 
   if (error) {
-    return { ok: false, message: error.message, code: error.code };
+    const detailParts = [error.message, error.details, error.hint].filter(
+      (p): p is string => typeof p === "string" && p.length > 0,
+    );
+    const message = detailParts.join(" | ") || "Supabase upsert failed";
+    console.error("[anime_cache] upsert failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      id: payload.id,
+    });
+    return {
+      ok: false,
+      message,
+      code: error.code,
+      details: error.details ?? undefined,
+      hint: error.hint ?? undefined,
+    };
   }
 
   const row = mapRow(data);
   if (!row) {
+    console.error("[anime_cache] upsert returned unparseable row", { data });
     return {
       ok: false,
       message: "Upsert returned no parsable row.",
@@ -220,11 +290,6 @@ export async function getCachedSeasonAnime(
   return mapRows(data as unknown[]);
 }
 
-/** Stable slug for AniList-backed rows (until you add human slugs). */
-export function animeCacheSlugForAnilistId(id: number): string {
-  return `anime-${id}`;
-}
-
 /**
  * Map an AniList detail record into a Supabase upsert row (plus optional AI fields).
  */
@@ -232,43 +297,33 @@ export function animeDetailToCacheUpsert(
   anime: AnimeDetail,
   ai?: AnimeAIContent,
 ): AnimeCacheUpsert {
-  const slug = animeCacheSlugForAnilistId(anime.id);
-  const trailer_site = anime.trailerYoutubeId ? "youtube" : null;
-  const trailer_id = anime.trailerYoutubeId;
-
-  const base: AnimeCacheUpsert = {
-    id: anime.id,
-    slug,
-    title_romaji: anime.titleRomaji,
-    title_english: anime.title,
-    cover_image: anime.coverImage?.trim() || null,
-    banner_image: anime.bannerImage?.trim() || null,
-    description: anime.description,
-    genres: anime.genres,
-    average_score: anime.averageScore,
-    popularity: anime.popularity,
-    format: anime.format,
-    status: anime.status,
-    episodes: anime.episodes,
-    season: anime.season,
-    season_year: anime.seasonYear,
-    trailer_site,
-    trailer_id,
-  };
-
-  if (!ai) {
-    return base;
+  if (ai) {
+    return buildAnimeCacheUpsertRow(anime, ai);
   }
 
-  const now = new Date().toISOString();
+  const numericId = Math.trunc(Number(anime.id));
+  const slug = animeCacheSlugForAnilistId(numericId);
+  const trailer_site = anime.trailerYoutubeId ? "youtube" : null;
+  const trailer_id = anime.trailerYoutubeId ?? null;
+
   return {
-    ...base,
-    ai_summary: ai.ai_summary,
-    why_watch: ai.why_watch,
-    perfect_if_you_like: ai.perfect_if_you_like,
-    seo_title: ai.seo_title,
-    seo_description: ai.seo_description,
-    ai_updated_at: now,
+    id: numericId,
+    slug,
+    title_romaji: anime.titleRomaji ?? null,
+    title_english: anime.title ?? null,
+    cover_image: anime.coverImage?.trim() ? anime.coverImage.trim() : null,
+    banner_image: anime.bannerImage?.trim() || null,
+    description: anime.description ?? null,
+    genres: Array.isArray(anime.genres) ? [...anime.genres] : [],
+    average_score: anime.averageScore ?? null,
+    popularity: anime.popularity ?? null,
+    format: anime.format ?? null,
+    status: anime.status ?? null,
+    episodes: anime.episodes ?? null,
+    season: anime.season ?? null,
+    season_year: anime.seasonYear ?? null,
+    trailer_site,
+    trailer_id,
   };
 }
 

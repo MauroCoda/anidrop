@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   animeCacheHasFullAiContent,
   animeCacheRowToAIContent,
-  animeDetailToCacheUpsert,
+  buildAnimeCacheUpsertRow,
   getCachedAnimeById,
   upsertAnimeCache,
 } from "@/src/lib/anime-cache";
@@ -43,6 +43,21 @@ function parsePostBody(body: unknown): {
   const forceRegenerate =
     Boolean(raw.regenerate) && process.env.NODE_ENV === "development";
   return { id: Math.floor(n), forceRegenerate };
+}
+
+/** Append guidance when PostgREST / Postgres reports permission or RLS issues. */
+function withRlsHint(message: string, code?: string): string {
+  const m = message.toLowerCase();
+  const rlsLike =
+    code === "42501" ||
+    code === "PGRST301" ||
+    m.includes("permission denied") ||
+    m.includes("row-level security") ||
+    m.includes("violates row-level security");
+  if (!rlsLike) {
+    return message;
+  }
+  return `${message} — If RLS is blocking writes, ensure policies on public.anime_cache allow INSERT and UPDATE for role anon (see supabase/schema.sql). For local dev only you may run: ALTER TABLE public.anime_cache DISABLE ROW LEVEL SECURITY;`;
 }
 
 export async function POST(request: Request) {
@@ -85,18 +100,21 @@ export async function POST(request: Request) {
   }
 
   if (cached && animeCacheHasFullAiContent(cached) && !forceRegenerate) {
-    const content: AnimeAIContent = animeCacheRowToAIContent(cached);
+    const generatedContent: AnimeAIContent = animeCacheRowToAIContent(cached);
     const cache: CachePayload = { status: "hit", rowId: cached.id };
     return NextResponse.json({
       source: "cache" as const,
-      content,
+      generatedContent,
+      content: generatedContent,
+      savedToSupabase: true,
+      supabaseError: null,
       cache,
     });
   }
 
-  let content: AnimeAIContent;
+  let generatedContent: AnimeAIContent;
   try {
-    content = await generateAnimeAIContent(anime);
+    generatedContent = await generateAnimeAIContent(anime);
   } catch (e) {
     const message = e instanceof Error ? e.message : "OpenAI request failed";
     const missingKey = message.includes("OPENAI_API_KEY");
@@ -110,25 +128,55 @@ export async function POST(request: Request) {
   }
 
   let cache: CachePayload;
+  let savedToSupabase = false;
+  let supabaseError: string | null = null;
 
   if (isSupabaseConfigured()) {
-    const payload = animeDetailToCacheUpsert(anime, content);
-    const res = await upsertAnimeCache(payload);
-    if (res.ok) {
-      cache = { status: "ok", rowId: res.row.id };
-    } else {
-      cache = { status: "error", message: res.message, code: res.code };
+    try {
+      const payload = buildAnimeCacheUpsertRow(anime, generatedContent);
+      const res = await upsertAnimeCache(payload);
+      if (res.ok) {
+        cache = { status: "ok", rowId: res.row.id };
+        savedToSupabase = true;
+        supabaseError = null;
+      } else {
+        cache = { status: "error", message: res.message, code: res.code };
+        savedToSupabase = false;
+        supabaseError = withRlsHint(res.message, res.code);
+        console.error("[generate-ai] anime_cache upsert failed", {
+          animeId: id,
+          code: res.code,
+          message: res.message,
+          details: res.details,
+          hint: res.hint,
+        });
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      cache = { status: "error", message };
+      savedToSupabase = false;
+      supabaseError = message;
+      console.error("[generate-ai] anime_cache upsert threw", {
+        animeId: id,
+        message,
+      });
     }
   } else {
     cache = {
       status: "skipped",
-      reason: "Supabase env vars not set; skipped upsert.",
+      reason:
+        "Supabase env vars not set (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY); skipped upsert.",
     };
+    savedToSupabase = false;
+    supabaseError = cache.reason;
   }
 
   return NextResponse.json({
     source: "generated" as const,
-    content,
+    generatedContent,
+    content: generatedContent,
+    savedToSupabase,
+    supabaseError,
     cache,
   });
 }
