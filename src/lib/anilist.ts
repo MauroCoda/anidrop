@@ -266,6 +266,95 @@ export async function getCurrentSeasonAnime(
   return media.map(mapMedia);
 }
 
+const ANIME_BY_IDS_QUERY = `
+  query AnimeByIds($id_in: [Int], $perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      media(type: ANIME, id_in: $id_in) {
+        id
+        title {
+          romaji
+          english
+        }
+        coverImage {
+          large
+        }
+        genres
+        averageScore
+        format
+        status
+        seasonYear
+        startDate {
+          year
+        }
+      }
+    }
+  }
+`;
+
+const ANILIST_ID_PAGE_CAP = 50;
+
+/**
+ * Batch-load catalog cards by AniList media ids (single request per chunk).
+ * Returns a map for O(1) lookup; missing ids are omitted if AniList has no row.
+ */
+export async function getAnimeByIdsForHomepage(
+  ids: number[],
+): Promise<Map<number, TrendingAnime>> {
+  const unique = [
+    ...new Set(
+      ids
+        .map((id) => Math.trunc(Number(id)))
+        .filter((id) => Number.isFinite(id) && id > 0),
+    ),
+  ];
+  const out = new Map<number, TrendingAnime>();
+  if (unique.length === 0) {
+    return out;
+  }
+
+  for (let i = 0; i < unique.length; i += ANILIST_ID_PAGE_CAP) {
+    const chunk = unique.slice(i, i + ANILIST_ID_PAGE_CAP);
+    try {
+      const res = await fetch(ANILIST_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          query: ANIME_BY_IDS_QUERY,
+          variables: { id_in: chunk, perPage: ANILIST_ID_PAGE_CAP },
+        }),
+        next: { revalidate: 3600 },
+      });
+
+      if (!res.ok) {
+        continue;
+      }
+
+      const json = (await res.json()) as PageQueryResponse;
+
+      if (json.errors?.length) {
+        continue;
+      }
+
+      const media = json.data?.Page?.media;
+      if (!media?.length) {
+        continue;
+      }
+
+      for (const node of media) {
+        const row = mapMedia(node);
+        out.set(row.id, row);
+      }
+    } catch {
+      /* ignore chunk */
+    }
+  }
+
+  return out;
+}
+
 const RECOMMENDATIONS_QUERY = `
   query MediaRecommendations($id: Int, $perPage: Int) {
     Media(id: $id, type: ANIME) {

@@ -3,14 +3,18 @@ import Link from "next/link";
 
 import { AnimeCard } from "@/src/components/AnimeCard";
 import { Hero } from "@/src/components/Hero";
+import { HomepageEditorialRails } from "@/src/components/HomepageEditorialRails";
 import { HomeTrendingClient } from "@/src/components/HomeTrendingClient";
 import { Navbar } from "@/src/components/Navbar";
 import { SectionHeader } from "@/src/components/SectionHeader";
 import {
+  getAnimeByIdsForHomepage,
   getCurrentSeasonAnime,
   getCurrentSeasonYear,
   getTrendingAnime,
+  type TrendingAnime,
 } from "@/src/lib/anilist";
+import { getActiveHomepageSections } from "@/src/lib/homepage-sections";
 import { getSiteUrl } from "@/src/lib/site";
 
 const siteUrl = getSiteUrl();
@@ -43,6 +47,8 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
+  const editorialSectionsPromise = getActiveHomepageSections();
+
   let trending: Awaited<ReturnType<typeof getTrendingAnime>> = [];
   let season: Awaited<ReturnType<typeof getCurrentSeasonAnime>> = [];
   let trendingError: string | null = null;
@@ -64,6 +70,16 @@ export default async function Home() {
         : "Could not load this season's anime.";
   }
 
+  const editorialSections = await editorialSectionsPromise;
+
+  let editorialAnimeById = new Map<number, TrendingAnime>();
+  if (editorialSections.length > 0) {
+    const editorialIds = [
+      ...new Set(editorialSections.flatMap((s) => s.anime_ids)),
+    ];
+    editorialAnimeById = await getAnimeByIdsForHomepage(editorialIds);
+  }
+
   const { season: seasonKey, year } = getCurrentSeasonYear();
   const seasonSubtitle = `${seasonKey.charAt(0) + seasonKey.slice(1).toLowerCase()} ${year}`;
 
@@ -72,6 +88,11 @@ export default async function Home() {
       <Navbar />
       <div className="mx-auto w-full min-w-0 max-w-[90rem] px-4 pb-16 sm:px-6 lg:px-10 lg:pb-24">
         <Hero />
+
+        <HomepageEditorialRails
+          sections={editorialSections}
+          animeById={editorialAnimeById}
+        />
 
         <section
           id="trending"
