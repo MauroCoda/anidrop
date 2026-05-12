@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AnimeCard } from "@/src/components/AnimeCard";
+import { AnimeDevAIGenerateButton } from "@/src/components/AnimeDevAIGenerateButton";
 import { SectionHeader } from "@/src/components/SectionHeader";
 import {
   getAnimeById,
@@ -373,6 +374,9 @@ export default async function AnimePage({
                     No synopsis available.
                   </p>
                 )}
+                {process.env.NODE_ENV === "development" ? (
+                  <AnimeDevAIGenerateButton animeId={anime.id} />
+                ) : null}
               </section>
             </div>
           </div>
