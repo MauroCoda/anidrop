@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { AnimeCard } from "@/src/components/AnimeCard";
 import { AnimeAISections } from "@/src/components/AnimeAISections";
@@ -14,6 +14,10 @@ import {
   type AnimeDetail,
 } from "@/src/lib/anilist";
 import { truncatePlainText } from "@/src/lib/seo";
+import {
+  buildAnimeRouteSegment,
+  parseAnilistIdFromAnimeRouteParam,
+} from "@/src/lib/slugify";
 import { getSiteUrl } from "@/src/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -34,11 +38,11 @@ function buildAnimeDescription(anime: AnimeDetail): string {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id: rawId } = await params;
-  const id = Number.parseInt(rawId, 10);
-  if (!Number.isFinite(id) || id <= 0) {
+  const { slug: rawSlug } = await params;
+  const id = parseAnilistIdFromAnimeRouteParam(rawSlug);
+  if (id == null) {
     return { title: "Anime", robots: { index: false, follow: true } };
   }
 
@@ -52,7 +56,7 @@ export async function generateMetadata({
 
   const description = buildAnimeDescription(anime);
   const site = getSiteUrl();
-  const path = `/anime/${id}`;
+  const path = `/anime/${buildAnimeRouteSegment(anime)}`;
   const pageTitle = `${anime.title} | AniDrop`;
   const ogImage =
     anime.bannerImage?.trim() || anime.coverImage?.trim() || null;
@@ -148,11 +152,11 @@ function InfoBadge({
 export default async function AnimePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id: rawId } = await params;
-  const id = Number.parseInt(rawId, 10);
-  if (!Number.isFinite(id) || id <= 0) {
+  const { slug: rawSlug } = await params;
+  const id = parseAnilistIdFromAnimeRouteParam(rawSlug);
+  if (id == null) {
     notFound();
   }
 
@@ -164,6 +168,11 @@ export default async function AnimePage({
 
   if (!anime) {
     notFound();
+  }
+
+  const canonicalSlug = buildAnimeRouteSegment(anime);
+  if (rawSlug !== canonicalSlug) {
+    permanentRedirect(`/anime/${canonicalSlug}`);
   }
 
   const seasonYear = formatSeasonYear(anime);

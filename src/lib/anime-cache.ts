@@ -2,6 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 
 import type { AnimeDetail } from "@/src/lib/anilist";
 import type { AnimeAIContent } from "@/src/lib/openai";
+import { buildAnimeRouteSegment } from "@/src/lib/slugify";
 import type { AnimeCacheRow, AnimeCacheUpsert } from "@/src/types/anime";
 import { createSupabaseClient, isSupabaseConfigured } from "@/src/lib/supabase";
 
@@ -156,11 +157,6 @@ function omitUndefined(record: Record<string, unknown>): Record<string, unknown>
   );
 }
 
-/** Stable slug for AniList-backed rows (until you add human slugs). */
-export function animeCacheSlugForAnilistId(id: number): string {
-  return `anime-${id}`;
-}
-
 /**
  * Full row for `anime_cache` upsert after OpenAI — every column required by the
  * API contract is set explicitly (avoids PostgREST merge omitting AI fields).
@@ -174,7 +170,7 @@ export function buildAnimeCacheUpsertRow(
     throw new Error(`Invalid anime id for cache upsert: ${anime.id}`);
   }
   const now = new Date().toISOString();
-  const slug = animeCacheSlugForAnilistId(numericId);
+  const slug = buildAnimeRouteSegment(anime);
   const trailer_site = anime.trailerYoutubeId ? "youtube" : null;
   const trailer_id = anime.trailerYoutubeId ?? null;
 
@@ -306,7 +302,7 @@ export function animeDetailToCacheUpsert(
   }
 
   const numericId = Math.trunc(Number(anime.id));
-  const slug = animeCacheSlugForAnilistId(numericId);
+  const slug = buildAnimeRouteSegment(anime);
   const trailer_site = anime.trailerYoutubeId ? "youtube" : null;
   const trailer_id = anime.trailerYoutubeId ?? null;
 

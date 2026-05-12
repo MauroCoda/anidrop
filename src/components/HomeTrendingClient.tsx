@@ -8,6 +8,7 @@ import { useEffect, useState, type KeyboardEvent } from "react";
 import { AnimeCard } from "@/src/components/AnimeCard";
 import { AnimeCardSkeletonGrid } from "@/src/components/AnimeCardSkeleton";
 import type { TrendingAnime } from "@/src/lib/anilist";
+import { animeDetailPath } from "@/src/lib/slugify";
 
 type Props = {
   initialTrending: TrendingAnime[];
@@ -140,7 +141,7 @@ export function HomeTrendingClient({ initialTrending }: Props) {
     const first = previewList[0] ?? gridList[0];
     if (first) {
       e.preventDefault();
-      router.push(`/anime/${first.id}`);
+      router.push(animeDetailPath(first));
     }
   }
 
@@ -205,7 +206,7 @@ export function HomeTrendingClient({ initialTrending }: Props) {
                 return (
                   <Link
                     key={anime.id}
-                    href={`/anime/${anime.id}`}
+                    href={animeDetailPath(anime)}
                     className="flex min-w-0 gap-3 px-3 py-2.5 transition hover:bg-violet-950/35"
                     role="option"
                   >

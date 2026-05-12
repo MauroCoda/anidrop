@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { TrendingAnime } from "@/src/lib/anilist";
+import { animeDetailPath } from "@/src/lib/slugify";
 
 export type AnimeCardProps = {
   anime: TrendingAnime;
@@ -65,7 +66,7 @@ export function AnimeCard({
 
   return (
     <Link
-      href={`/anime/${anime.id}`}
+      href={animeDetailPath(anime)}
       aria-label={`${anime.title} — view details`}
       className={`group block h-full min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 ${shellRadius}`}
     >

@@ -4,6 +4,7 @@ import {
   getCurrentSeasonAnime,
   getTrendingAnime,
 } from "@/src/lib/anilist";
+import { animeDetailPath } from "@/src/lib/slugify";
 import { getSiteUrl } from "@/src/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -35,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
       seen.add(item.id);
       animeEntries.push({
-        url: new URL(`/anime/${item.id}`, base).href,
+        url: new URL(animeDetailPath(item), base).href,
         lastModified: new Date(),
         changeFrequency: "weekly",
         priority: 0.65,

@@ -31,6 +31,9 @@ create table if not exists public.anime_cache (
   updated_at timestamptz not null default now()
 );
 
+comment on column public.anime_cache.slug is
+  'Public URL segment: slugified display title, hyphen, AniList media id (e.g. witch-hat-atelier-178701). Numeric-only /anime/{id} still resolves; legacy anime-{id} values are replaced on upsert.';
+
 comment on table public.anime_cache is
   'Server-side cache of AniList anime rows + optional AI/SEO fields. Populated by a sync job; app reads via anon key when wired.';
 
