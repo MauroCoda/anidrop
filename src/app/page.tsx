@@ -16,7 +16,7 @@ import { getSiteUrl } from "@/src/lib/site";
 const siteUrl = getSiteUrl();
 
 const homeDescription =
-  "Browse trending titles, this season's lineup, and search the anime catalog. Scores, genres, trailers — AniDrop.";
+  "Trending charts, this season's popular anime, live search, scores, genres, and trailers — a compact dark catalog powered by AniList.";
 
 export const metadata: Metadata = {
   title: "Trending & seasonal anime",
@@ -24,15 +24,16 @@ export const metadata: Metadata = {
   keywords: [
     "anime",
     "trending anime",
-    "winter anime",
-    "spring anime",
+    "seasonal anime",
     "anime search",
+    "anime catalog",
     "AniList",
     "AniDrop",
   ],
   openGraph: {
     title: "Trending & seasonal anime | AniDrop",
     description: homeDescription,
+    ...(siteUrl ? { url: new URL("/", siteUrl).href } : {}),
   },
   twitter: {
     title: "Trending & seasonal anime | AniDrop",
@@ -69,12 +70,12 @@ export default async function Home() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-zinc-950/80 text-white backdrop-blur-[2px]">
       <Navbar />
-      <div className="mx-auto w-full max-w-[90rem] px-4 pb-16 sm:px-6 lg:px-10 lg:pb-24">
+      <div className="mx-auto w-full min-w-0 max-w-[90rem] px-4 pb-16 sm:px-6 lg:px-10 lg:pb-24">
         <Hero />
 
         <section
           id="trending"
-          className="scroll-mt-20 pt-2 md:pt-4"
+          className="scroll-mt-20 border-t border-transparent pt-8 md:pt-10"
         >
           <SectionHeader
             title="Trending Now"
@@ -102,7 +103,7 @@ export default async function Home() {
 
         <section
           id="this-season"
-          className="scroll-mt-20 mt-16 border-t border-white/[0.06] pt-12 md:mt-20 md:pt-16"
+          className="scroll-mt-20 mt-14 border-t border-white/[0.06] pt-10 md:mt-20 md:pt-16"
         >
           <SectionHeader
             title="This Season"

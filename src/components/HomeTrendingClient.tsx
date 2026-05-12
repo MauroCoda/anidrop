@@ -145,11 +145,14 @@ export function HomeTrendingClient({ initialTrending }: Props) {
   }
 
   return (
-    <div className="w-full min-w-0">
-      <div className="relative z-20 mx-auto mb-10 min-w-0 max-w-2xl sm:mb-12">
-        <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/55 p-4 shadow-xl shadow-black/40 ring-1 ring-violet-500/[0.07] backdrop-blur-sm sm:p-5">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+    <div className="w-full min-w-0 overflow-x-hidden">
+      <div className="relative z-20 mx-auto mb-9 min-w-0 max-w-2xl sm:mb-11 lg:max-w-3xl">
+        <div className="rounded-2xl border border-white/[0.09] bg-gradient-to-b from-zinc-900/70 to-zinc-950/75 p-4 shadow-[0_20px_50px_-28px_rgba(0,0,0,0.85),0_0_0_1px_rgba(139,92,246,0.08)] ring-1 ring-violet-500/[0.09] backdrop-blur-md sm:p-5">
+          <p className="text-center text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-300/75 sm:text-[11px]">
             Search the catalog
+          </p>
+          <p className="mt-1 text-center text-xs text-zinc-500 sm:text-[13px]">
+            Live suggestions — press Enter to open the first match.
           </p>
           <label htmlFor="anime-search" className="sr-only">
             Search anime
@@ -163,7 +166,7 @@ export function HomeTrendingClient({ initialTrending }: Props) {
             onKeyDown={handleEnter}
             placeholder="Titles, studios, genres…"
             autoComplete="off"
-            className="mt-3 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white shadow-inner shadow-black/40 outline-none ring-1 ring-white/[0.05] transition placeholder:text-zinc-600 focus:border-violet-500/50 focus:ring-violet-500/25 sm:text-base"
+            className="mt-3.5 w-full min-w-0 rounded-xl border border-white/12 bg-black/50 px-4 py-3.5 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none ring-1 ring-white/[0.06] transition placeholder:text-zinc-600 focus:border-violet-500/45 focus:shadow-[inset_0_1px_0_rgba(139,92,246,0.08),0_0_0_3px_rgba(139,92,246,0.12)] focus:ring-violet-500/30 sm:min-h-[52px] sm:py-4 sm:text-base"
           />
         </div>
 

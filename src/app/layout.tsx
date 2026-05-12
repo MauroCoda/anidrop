@@ -17,39 +17,52 @@ const geistMono = Geist_Mono({
 const siteUrl = getSiteUrl();
 
 const defaultDescription =
-  "Discover trending anime, seasonal picks, and what to watch next. Search the catalog — fast, dark UI powered by AniList.";
+  "AniDrop is a fast, dark anime discovery dashboard: trending charts, this season's lineup, trailers, scores, and live catalog search — powered by AniList.";
 
 export const metadata: Metadata = {
   ...(siteUrl ? { metadataBase: siteUrl } : {}),
   title: {
-    default: "AniDrop — anime discovery",
+    default: "AniDrop — anime discovery dashboard",
     template: "%s | AniDrop",
   },
   description: defaultDescription,
   applicationName: "AniDrop",
   keywords: [
     "anime",
+    "anime discovery",
     "trending anime",
     "seasonal anime",
+    "spring anime",
+    "summer anime",
+    "fall anime",
+    "winter anime",
+    "anime search",
+    "anime catalog",
     "AniList",
-    "anime discovery",
+    "AniDrop",
+    "what to watch anime",
   ],
   authors: [{ name: "AniDrop" }],
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "AniDrop",
-    title: "AniDrop — anime discovery",
+    title: "AniDrop — anime discovery dashboard",
     description: defaultDescription,
+    ...(siteUrl ? { url: siteUrl.href } : {}),
   },
   twitter: {
     card: "summary_large_image",
-    title: "AniDrop — anime discovery",
+    title: "AniDrop — anime discovery dashboard",
     description: defaultDescription,
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
 };
 

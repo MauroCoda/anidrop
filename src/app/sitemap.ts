@@ -1,13 +1,18 @@
 import type { MetadataRoute } from "next";
 
+import {
+  getCurrentSeasonAnime,
+  getTrendingAnime,
+} from "@/src/lib/anilist";
 import { getSiteUrl } from "@/src/lib/site";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   if (!base) {
     return [];
   }
-  return [
+
+  const home: MetadataRoute.Sitemap = [
     {
       url: new URL("/", base).href,
       lastModified: new Date(),
@@ -15,4 +20,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
   ];
+
+  try {
+    const [trending, season] = await Promise.all([
+      getTrendingAnime(24),
+      getCurrentSeasonAnime(24),
+    ]);
+    const seen = new Set<number>();
+    const animeEntries: MetadataRoute.Sitemap = [];
+
+    for (const item of [...trending, ...season]) {
+      if (!Number.isFinite(item.id) || item.id <= 0 || seen.has(item.id)) {
+        continue;
+      }
+      seen.add(item.id);
+      animeEntries.push({
+        url: new URL(`/anime/${item.id}`, base).href,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.65,
+      });
+    }
+
+    return [...home, ...animeEntries];
+  } catch {
+    return home;
+  }
 }
