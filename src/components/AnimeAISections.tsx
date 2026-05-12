@@ -100,7 +100,7 @@ export function AnimeAISections({
         const generated =
           body?.generatedContent ?? body?.content ?? undefined;
 
-        if (!res.ok || !generated) {
+        if (!res.ok || !body || !generated) {
           const msg =
             typeof body?.error === "string"
               ? body.error
