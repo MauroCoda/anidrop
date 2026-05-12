@@ -126,6 +126,10 @@ export async function getCachedAnimeById(
     });
     return null;
   }
+  return mapRow(data);
+}
+
+export async function getCachedAnimeBySlug(
   slug: string,
 ): Promise<AnimeCacheRow | null> {
   noStore();
