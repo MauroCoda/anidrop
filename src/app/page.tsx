@@ -67,7 +67,7 @@ export default async function Home() {
   const seasonSubtitle = `${seasonKey.charAt(0) + seasonKey.slice(1).toLowerCase()} ${year}`;
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-zinc-950/80 text-white backdrop-blur-[2px]">
       <Navbar />
       <Hero />
 

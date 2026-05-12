@@ -9,6 +9,8 @@ export type TrendingAnime = {
   averageScore: number | null;
   format: string | null;
   status: string | null;
+  seasonYear: number | null;
+  startDateYear: number | null;
 };
 
 type MediaNode = {
@@ -24,6 +26,8 @@ type MediaNode = {
   averageScore: number | null;
   format: string | null;
   status: string | null;
+  seasonYear?: number | null;
+  startDate?: { year?: number | null } | null;
 };
 
 type PageQueryResponse = {
@@ -47,6 +51,8 @@ function mapMedia(node: MediaNode): TrendingAnime {
     averageScore: node.averageScore,
     format: node.format ?? null,
     status: node.status ?? null,
+    seasonYear: node.seasonYear ?? null,
+    startDateYear: node.startDate?.year ?? null,
   };
 }
 
@@ -66,6 +72,10 @@ const TRENDING_QUERY = `
         averageScore
         format
         status
+        seasonYear
+        startDate {
+          year
+        }
       }
     }
   }
@@ -121,6 +131,10 @@ const SEARCH_ANIME_QUERY = `
         averageScore
         format
         status
+        seasonYear
+        startDate {
+          year
+        }
       }
     }
   }
@@ -207,6 +221,10 @@ const SEASON_ANIME_QUERY = `
         averageScore
         format
         status
+        seasonYear
+        startDate {
+          year
+        }
       }
     }
   }
@@ -246,6 +264,113 @@ export async function getCurrentSeasonAnime(
   }
 
   return media.map(mapMedia);
+}
+
+const RECOMMENDATIONS_QUERY = `
+  query MediaRecommendations($id: Int, $perPage: Int) {
+    Media(id: $id, type: ANIME) {
+      recommendations(perPage: $perPage, sort: RATING_DESC) {
+        edges {
+          node {
+            mediaRecommendation {
+              id
+              title {
+                romaji
+                english
+              }
+              coverImage {
+                large
+              }
+              genres
+              averageScore
+              format
+              status
+              seasonYear
+              startDate {
+                year
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type RecommendationsResponse = {
+  data?: {
+    Media?: {
+      recommendations?: {
+        edges?: Array<{
+          node?: {
+            mediaRecommendation?: MediaNode | null;
+          } | null;
+        } | null> | null;
+      } | null;
+    } | null;
+  };
+  errors?: Array<{ message: string }>;
+};
+
+export async function getRecommendedAnime(
+  mediaId: number,
+  perPage = 8,
+): Promise<TrendingAnime[]> {
+  if (!Number.isFinite(mediaId) || mediaId <= 0) {
+    return [];
+  }
+
+  try {
+    const res = await fetch(ANILIST_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        query: RECOMMENDATIONS_QUERY,
+        variables: { id: mediaId, perPage },
+      }),
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) {
+      return [];
+    }
+
+    const json = (await res.json()) as RecommendationsResponse;
+
+    if (json.errors?.length) {
+      return [];
+    }
+
+    const edges = json.data?.Media?.recommendations?.edges;
+    if (!edges?.length) {
+      return [];
+    }
+
+    const seen = new Set<number>();
+    const out: TrendingAnime[] = [];
+
+    for (const edge of edges) {
+      const raw = edge?.node?.mediaRecommendation;
+      if (!raw?.id || raw.id === mediaId) {
+        continue;
+      }
+      if (seen.has(raw.id)) {
+        continue;
+      }
+      seen.add(raw.id);
+      out.push(mapMedia(raw));
+      if (out.length >= perPage) {
+        break;
+      }
+    }
+
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 /** Full anime record for detail page (from Media by id). */

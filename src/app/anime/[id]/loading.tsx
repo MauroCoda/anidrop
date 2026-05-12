@@ -1,6 +1,6 @@
 export default function AnimeDetailLoading() {
   return (
-    <main className="min-h-screen overflow-x-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-zinc-950/80 text-white backdrop-blur-[2px]">
       <header className="border-b border-white/10 px-4 py-4 sm:px-8">
         <div className="h-4 w-28 animate-pulse rounded bg-zinc-800 sm:w-32" />
       </header>

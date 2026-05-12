@@ -3,7 +3,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getAnimeById, type AnimeDetail } from "@/src/lib/anilist";
+import { AnimeCard } from "@/src/components/AnimeCard";
+import { SectionHeader } from "@/src/components/SectionHeader";
+import {
+  getAnimeById,
+  getRecommendedAnime,
+  type AnimeDetail,
+} from "@/src/lib/anilist";
 import { getSiteUrl } from "@/src/lib/site";
 
 function truncateMetaText(text: string, max: number): string {
@@ -147,7 +153,10 @@ export default async function AnimePage({
     notFound();
   }
 
-  const anime = await getAnimeById(id);
+  const [anime, recommended] = await Promise.all([
+    getAnimeById(id),
+    getRecommendedAnime(id, 8),
+  ]);
 
   if (!anime) {
     notFound();
@@ -160,7 +169,7 @@ export default async function AnimePage({
       : null;
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-zinc-950/80 text-white backdrop-blur-[2px]">
       <header className="border-b border-white/10 px-4 py-4 sm:px-8">
         <Link
           href="/"
@@ -321,6 +330,28 @@ export default async function AnimePage({
             </p>
           ) : (
             <p className="mt-4 text-sm text-zinc-500">No synopsis available.</p>
+          )}
+        </section>
+
+        <section
+          className="mt-12 border-t border-white/[0.06] pt-10 sm:mt-14 sm:pt-12"
+          aria-labelledby="similar-heading"
+        >
+          <SectionHeader title="You may also like" titleId="similar-heading" />
+          {recommended.length === 0 ? (
+            <p className="text-sm text-zinc-500">
+              No recommendations available from AniList for this title.
+            </p>
+          ) : (
+            <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
+              {recommended.map((item) => (
+                <AnimeCard
+                  key={item.id}
+                  anime={item}
+                  footerLabel="Similar"
+                />
+              ))}
+            </div>
           )}
         </section>
       </div>

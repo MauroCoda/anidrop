@@ -65,10 +65,20 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className="min-h-full flex flex-col"
+        className="relative flex min-h-full flex-col"
         suppressHydrationWarning={true}
       >
-        {children}
+        <div
+          className="pointer-events-none fixed inset-0 -z-10 opacity-[0.35] sm:opacity-40"
+          aria-hidden
+        >
+          <div className="absolute -left-[20%] top-[18%] h-[min(28rem,55vw)] w-[min(28rem,70vw)] rounded-full bg-violet-600/25 blur-[100px]" />
+          <div className="absolute -right-[15%] top-[8%] h-[min(22rem,50vw)] w-[min(22rem,55vw)] rounded-full bg-fuchsia-700/20 blur-[90px]" />
+          <div className="absolute bottom-[5%] left-[30%] h-[min(20rem,45vw)] w-[min(36rem,90vw)] rounded-full bg-indigo-900/25 blur-[110px]" />
+        </div>
+        <div className="relative z-0 flex min-h-full flex-1 flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );

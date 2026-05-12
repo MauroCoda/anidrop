@@ -2,7 +2,7 @@ import { AnimeCardSkeletonGrid } from "@/src/components/AnimeCardSkeleton";
 
 export default function HomeLoading() {
   return (
-    <main className="min-h-screen overflow-x-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-zinc-950/80 text-white backdrop-blur-[2px]">
       <div className="flex min-w-0 flex-col gap-4 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 lg:px-8 lg:py-6">
         <div className="h-8 w-36 animate-pulse rounded-lg bg-zinc-800/90 sm:h-9 sm:w-44" />
         <div className="flex flex-wrap gap-3">
