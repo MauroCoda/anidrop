@@ -69,72 +69,76 @@ export default async function Home() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-zinc-950/80 text-white backdrop-blur-[2px]">
       <Navbar />
-      <Hero />
+      <div className="mx-auto w-full max-w-[90rem] px-4 pb-16 sm:px-6 lg:px-10 lg:pb-24">
+        <Hero />
 
-      <section
-        id="trending"
-        className="scroll-mt-20 px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8"
-      >
-        <SectionHeader
-          title="Trending Now"
-          action={
-            <Link
-              href="https://anilist.co/search/anime/trending"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-violet-400 transition hover:text-violet-300"
-            >
-              View All
-            </Link>
-          }
-        />
+        <section
+          id="trending"
+          className="scroll-mt-20 pt-2 md:pt-4"
+        >
+          <SectionHeader
+            title="Trending Now"
+            subtitle="High-momentum titles on AniList — refreshed on a short cache for snappy loads."
+            action={
+              <Link
+                href="https://anilist.co/search/anime/trending"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-violet-400 transition hover:text-violet-300"
+              >
+                View All
+              </Link>
+            }
+          />
 
-        {trendingError ? (
-          <p className="mb-6 rounded-2xl border border-amber-500/25 bg-amber-950/30 px-4 py-3 text-sm text-amber-100 sm:px-5">
-            {trendingError} You can still search below.
-          </p>
-        ) : null}
+          {trendingError ? (
+            <p className="mb-6 rounded-2xl border border-amber-500/25 bg-amber-950/30 px-4 py-3 text-sm text-amber-100 sm:px-5">
+              {trendingError} You can still search below.
+            </p>
+          ) : null}
 
-        <HomeTrendingClient initialTrending={trendingError ? [] : trending} />
-      </section>
+          <HomeTrendingClient initialTrending={trendingError ? [] : trending} />
+        </section>
 
-      <section
-        id="this-season"
-        className="scroll-mt-20 border-t border-white/[0.06] px-4 pb-20 sm:px-6 sm:pb-24 lg:px-8"
-      >
-        <SectionHeader
-          title="This Season"
-          subtitle={seasonSubtitle}
-          action={
-            <Link
-              href={`https://anilist.co/search/anime?season=${seasonKey}&seasonYear=${year}&sort=POPULARITY_DESC`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-violet-400 transition hover:text-violet-300"
-            >
-              AniList
-            </Link>
-          }
-        />
+        <section
+          id="this-season"
+          className="scroll-mt-20 mt-16 border-t border-white/[0.06] pt-12 md:mt-20 md:pt-16"
+        >
+          <SectionHeader
+            title="This Season"
+            subtitle={`${seasonSubtitle} — popular new & continuing series in this cour.`}
+            action={
+              <Link
+                href={`https://anilist.co/search/anime?season=${seasonKey}&seasonYear=${year}&sort=POPULARITY_DESC`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-violet-400 transition hover:text-violet-300"
+              >
+                AniList
+              </Link>
+            }
+          />
 
-        {seasonError ? (
-          <p className="rounded-2xl border border-red-500/30 bg-red-950/40 px-5 py-4 text-red-200">
-            {seasonError}
-          </p>
-        ) : season.length === 0 ? (
-          <p className="text-sm text-zinc-500">No seasonal entries available.</p>
-        ) : (
-          <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
-            {season.map((anime) => (
-              <AnimeCard
-                key={anime.id}
-                anime={anime}
-                footerLabel="This season"
-              />
-            ))}
-          </div>
-        )}
-      </section>
+          {seasonError ? (
+            <p className="rounded-2xl border border-red-500/30 bg-red-950/40 px-5 py-4 text-red-200">
+              {seasonError}
+            </p>
+          ) : season.length === 0 ? (
+            <p className="text-sm text-zinc-500">No seasonal entries available.</p>
+          ) : (
+            <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {season.map((anime) => (
+                <AnimeCard
+                  key={anime.id}
+                  anime={anime}
+                  footerLabel="This season"
+                  variant="catalog"
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

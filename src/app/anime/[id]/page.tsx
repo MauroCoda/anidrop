@@ -337,18 +337,23 @@ export default async function AnimePage({
           className="mt-12 border-t border-white/[0.06] pt-10 sm:mt-14 sm:pt-12"
           aria-labelledby="similar-heading"
         >
-          <SectionHeader title="You may also like" titleId="similar-heading" />
+          <SectionHeader
+            title="You may also like"
+            titleId="similar-heading"
+            subtitle="Curated picks from AniList based on this show — same compact tiles as the home catalog."
+          />
           {recommended.length === 0 ? (
             <p className="text-sm text-zinc-500">
               No recommendations available from AniList for this title.
             </p>
           ) : (
-            <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
+            <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {recommended.map((item) => (
                 <AnimeCard
                   key={item.id}
                   anime={item}
                   footerLabel="Similar"
+                  variant="catalog"
                 />
               ))}
             </div>

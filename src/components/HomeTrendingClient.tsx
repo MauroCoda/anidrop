@@ -146,25 +146,30 @@ export function HomeTrendingClient({ initialTrending }: Props) {
 
   return (
     <div className="w-full min-w-0">
-      <div className="relative z-20 mb-6 min-w-0">
-        <label htmlFor="anime-search" className="sr-only">
-          Search anime
-        </label>
-        <input
-          id="anime-search"
-          type="search"
-          enterKeyHint="go"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleEnter}
-          placeholder="Search anime…"
-          autoComplete="off"
-          className="w-full min-w-0 rounded-xl border border-white/10 bg-zinc-950/90 px-4 py-3 text-sm text-white shadow-inner shadow-black/30 outline-none ring-1 ring-white/[0.06] transition placeholder:text-zinc-500 focus:border-violet-500/45 focus:ring-violet-500/30 sm:text-base"
-        />
+      <div className="relative z-20 mx-auto mb-10 min-w-0 max-w-2xl sm:mb-12">
+        <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/55 p-4 shadow-xl shadow-black/40 ring-1 ring-violet-500/[0.07] backdrop-blur-sm sm:p-5">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            Search the catalog
+          </p>
+          <label htmlFor="anime-search" className="sr-only">
+            Search anime
+          </label>
+          <input
+            id="anime-search"
+            type="search"
+            enterKeyHint="go"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleEnter}
+            placeholder="Titles, studios, genres…"
+            autoComplete="off"
+            className="mt-3 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white shadow-inner shadow-black/40 outline-none ring-1 ring-white/[0.05] transition placeholder:text-zinc-600 focus:border-violet-500/50 focus:ring-violet-500/25 sm:text-base"
+          />
+        </div>
 
         {dropdownOpen ? (
           <div
-            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(70vh,22rem)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-zinc-950/95 py-1 shadow-2xl shadow-black/60 ring-1 ring-violet-500/15 backdrop-blur-md sm:max-h-96"
+            className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,22rem)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-zinc-950/95 py-1 shadow-2xl shadow-black/60 ring-1 ring-violet-500/15 backdrop-blur-md sm:max-h-96"
             role="listbox"
             aria-label="Search suggestions"
           >
@@ -230,11 +235,11 @@ export function HomeTrendingClient({ initialTrending }: Props) {
       </div>
 
       {showSkeleton ? (
-        <AnimeCardSkeletonGrid count={8} />
+        <AnimeCardSkeletonGrid count={12} variant="catalog" />
       ) : (
-        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {!showTrending && searchActive && gridList.length === 0 ? (
-            <p className="col-span-full text-center text-sm text-zinc-500 sm:text-left">
+            <p className="col-span-full py-6 text-center text-sm text-zinc-500 sm:text-left">
               No results found.
             </p>
           ) : null}
@@ -243,6 +248,7 @@ export function HomeTrendingClient({ initialTrending }: Props) {
               key={anime.id}
               anime={anime}
               footerLabel={footerLabel}
+              variant="catalog"
             />
           ))}
         </div>

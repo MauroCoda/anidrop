@@ -7,6 +7,11 @@ export type AnimeCardProps = {
   anime: TrendingAnime;
   /** Footer chip label (e.g. Trending, This season, Results). */
   footerLabel?: string;
+  /**
+   * `catalog` — compact dashboard tiles (homepage / dense grids).
+   * `poster` — taller showcase cards (default).
+   */
+  variant?: "poster" | "catalog";
 };
 
 function formatScoreDisplay(score: number | null): string {
@@ -44,35 +49,54 @@ function topLeftBadge(anime: TrendingAnime): string | null {
   return null;
 }
 
-export function AnimeCard({ anime, footerLabel = "Trending" }: AnimeCardProps) {
+export function AnimeCard({
+  anime,
+  footerLabel = "Trending",
+  variant = "poster",
+}: AnimeCardProps) {
   const badge = topLeftBadge(anime);
   const scoreText = formatScoreDisplay(anime.averageScore);
+  const catalog = variant === "catalog";
+
+  const shellRadius = catalog ? "rounded-xl" : "rounded-[1.35rem]";
+  const imageFrame = catalog
+    ? "h-44 w-full sm:h-48 md:h-52 lg:h-[220px] xl:h-[248px]"
+    : "aspect-[3/4] w-full";
 
   return (
     <Link
       href={`/anime/${anime.id}`}
       aria-label={`${anime.title} — view details`}
-      className="group block h-full min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 rounded-[1.35rem]"
+      className={`group block h-full min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 ${shellRadius}`}
     >
       <article
         className={[
-          "relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[1.35rem]",
+          "relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden",
+          shellRadius,
           "border border-white/[0.07] bg-zinc-900/95",
-          "shadow-[0_12px_40px_-12px_rgba(0,0,0,0.65)] ring-1 ring-white/[0.04]",
-          "transition-[box-shadow,border-color,transform,ring-color] duration-300 ease-out",
-          "hover:-translate-y-0.5",
-          "hover:border-violet-400/20 hover:shadow-[0_24px_56px_-16px_rgba(139,92,246,0.32),0_0_0_1px_rgba(139,92,246,0.12)]",
-          "hover:ring-violet-500/25",
+          catalog
+            ? "shadow-md shadow-black/40 ring-1 ring-white/[0.04] transition-[box-shadow,border-color,transform,ring-color] duration-200 ease-out hover:-translate-y-px hover:border-violet-500/25 hover:shadow-[0_12px_36px_-14px_rgba(139,92,246,0.22)] hover:ring-violet-500/15"
+            : "shadow-[0_12px_40px_-12px_rgba(0,0,0,0.65)] ring-1 ring-white/[0.04] transition-[box-shadow,border-color,transform,ring-color] duration-300 ease-out hover:-translate-y-0.5 hover:border-violet-400/20 hover:shadow-[0_24px_56px_-16px_rgba(139,92,246,0.32),0_0_0_1px_rgba(139,92,246,0.12)] hover:ring-violet-500/25",
         ].join(" ")}
       >
-        <div className="relative aspect-[3/4] w-full min-h-0 shrink-0 overflow-hidden bg-zinc-800">
+        <div
+          className={`relative min-h-0 w-full shrink-0 overflow-hidden bg-zinc-800 ${imageFrame}`}
+        >
           {anime.coverImage ? (
             <Image
               src={anime.coverImage}
               alt=""
               fill
-              className="z-0 object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.045]"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className={`z-0 object-cover ${
+                catalog
+                  ? "transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+                  : "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.045]"
+              }`}
+              sizes={
+                catalog
+                  ? "(max-width: 640px) 45vw, (max-width: 1200px) 18vw, 200px"
+                  : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              }
             />
           ) : (
             <div className="absolute inset-0 z-0 flex items-center justify-center bg-zinc-800 text-xs text-zinc-500">
@@ -81,26 +105,37 @@ export function AnimeCard({ anime, footerLabel = "Trending" }: AnimeCardProps) {
           )}
 
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-[36%] bg-gradient-to-b from-black/55 to-transparent"
+            className={`pointer-events-none absolute inset-x-0 top-0 z-[1] bg-gradient-to-b from-black/55 to-transparent ${catalog ? "h-[32%]" : "h-[36%]"}`}
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-[58%] bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent"
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent ${catalog ? "h-[52%]" : "h-[58%]"}`}
             aria-hidden
           />
 
           {badge ? (
-            <div className="absolute left-2.5 top-2.5 z-10 sm:left-3 sm:top-3">
-              <span className="inline-flex max-w-[min(100%,11rem)] items-center truncate rounded-lg border border-white/15 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-100 shadow-sm backdrop-blur-md sm:px-2.5 sm:text-[11px]">
+            <div
+              className={`absolute z-10 ${catalog ? "left-2 top-2" : "left-2.5 top-2.5 sm:left-3 sm:top-3"}`}
+            >
+              <span
+                className={`inline-flex max-w-[min(100%,10rem)] items-center truncate rounded-md border border-white/15 bg-black/50 font-semibold uppercase tracking-[0.1em] text-zinc-100 shadow-sm backdrop-blur-md ${
+                  catalog
+                    ? "px-1.5 py-0.5 text-[9px]"
+                    : "px-2 py-1 text-[10px] sm:px-2.5 sm:text-[11px]"
+                }`}
+              >
                 {badge}
               </span>
             </div>
           ) : null}
 
-          <div className="absolute right-2.5 top-2.5 z-10 sm:right-3 sm:top-3">
+          <div
+            className={`absolute z-10 ${catalog ? "right-2 top-2" : "right-2.5 top-2.5 sm:right-3 sm:top-3"}`}
+          >
             <span
               className={[
-                "inline-flex items-center gap-0.5 rounded-lg border px-2 py-1 text-xs font-bold tabular-nums shadow-md backdrop-blur-md sm:px-2.5 sm:text-sm",
+                "inline-flex items-center gap-0.5 rounded-md border font-bold tabular-nums shadow-md backdrop-blur-md",
+                catalog ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs sm:px-2.5 sm:text-sm",
                 anime.averageScore != null
                   ? "border-violet-400/35 bg-violet-950/75 text-violet-100"
                   : "border-white/10 bg-black/50 text-zinc-400",
@@ -118,11 +153,29 @@ export function AnimeCard({ anime, footerLabel = "Trending" }: AnimeCardProps) {
             </span>
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col justify-end p-3.5 pb-4 pt-14 sm:p-4 sm:pb-5 sm:pt-16">
-            <h4 className="line-clamp-2 text-base font-bold leading-snug tracking-tight text-white drop-shadow-md sm:text-lg">
+          <div
+            className={`absolute inset-x-0 bottom-0 z-10 flex flex-col justify-end ${
+              catalog
+                ? "p-2.5 pb-2 pt-10 sm:p-3 sm:pt-11"
+                : "p-3.5 pb-4 pt-14 sm:p-4 sm:pb-5 sm:pt-16"
+            }`}
+          >
+            <h4
+              className={`line-clamp-2 font-bold leading-snug tracking-tight text-white drop-shadow-md ${
+                catalog
+                  ? "text-xs sm:text-sm"
+                  : "text-base sm:text-lg"
+              }`}
+            >
               {anime.title}
             </h4>
-            <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-zinc-300/95 sm:text-xs">
+            <p
+              className={`line-clamp-2 leading-relaxed text-zinc-300/95 ${
+                catalog
+                  ? "mt-1 text-[10px] sm:text-[11px]"
+                  : "mt-1.5 text-[11px] sm:text-xs"
+              }`}
+            >
               {anime.genres.length > 0
                 ? anime.genres.join(" · ")
                 : "Genres TBA"}
@@ -130,8 +183,16 @@ export function AnimeCard({ anime, footerLabel = "Trending" }: AnimeCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center border-t border-white/[0.06] bg-zinc-950/90 px-3.5 py-2.5 sm:px-4 sm:py-3">
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500 sm:text-[11px]">
+        <div
+          className={`flex items-center border-t border-white/[0.06] bg-zinc-950/90 ${
+            catalog ? "px-2.5 py-1.5" : "px-3.5 py-2.5 sm:px-4 sm:py-3"
+          }`}
+        >
+          <span
+            className={`font-medium uppercase tracking-[0.18em] text-zinc-500 ${
+              catalog ? "text-[9px]" : "text-[10px] sm:text-[11px]"
+            }`}
+          >
             {footerLabel}
           </span>
         </div>

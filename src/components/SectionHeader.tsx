@@ -24,7 +24,9 @@ export function SectionHeader({
           {title}
         </h3>
         {subtitle ? (
-          <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-zinc-500">
+            {subtitle}
+          </p>
         ) : null}
       </div>
       {action ? <div className="shrink-0 self-start sm:self-auto">{action}</div> : null}
