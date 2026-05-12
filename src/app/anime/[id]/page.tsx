@@ -5,8 +5,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AnimeCard } from "@/src/components/AnimeCard";
-import { AnimeDevAIGenerateButton } from "@/src/components/AnimeDevAIGenerateButton";
+import { AnimeAISections } from "@/src/components/AnimeAISections";
 import { SectionHeader } from "@/src/components/SectionHeader";
+import { getCachedAnimeById } from "@/src/lib/anime-cache";
 import {
   getAnimeById,
   getRecommendedAnime,
@@ -153,9 +154,10 @@ export default async function AnimePage({
     notFound();
   }
 
-  const [anime, recommended] = await Promise.all([
+  const [anime, recommended, cached] = await Promise.all([
     getAnimeById(id),
     getRecommendedAnime(id, 8),
+    getCachedAnimeById(id),
   ]);
 
   if (!anime) {
@@ -374,10 +376,17 @@ export default async function AnimePage({
                     No synopsis available.
                   </p>
                 )}
-                {process.env.NODE_ENV === "development" ? (
-                  <AnimeDevAIGenerateButton animeId={anime.id} />
-                ) : null}
               </section>
+
+              <AnimeAISections
+                key={`${anime.id}-${cached?.ai_updated_at ?? "no-ai"}`}
+                animeId={anime.id}
+                initial={{
+                  ai_summary: cached?.ai_summary ?? null,
+                  why_watch: cached?.why_watch ?? null,
+                  perfect_if_you_like: cached?.perfect_if_you_like ?? null,
+                }}
+              />
             </div>
           </div>
 

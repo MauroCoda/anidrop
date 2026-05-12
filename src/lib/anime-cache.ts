@@ -254,6 +254,28 @@ export function animeDetailToCacheUpsert(
   };
 }
 
+/** All three narrative AI fields present (skip OpenAI / regeneration). */
+export function animeCacheHasFullAiContent(row: AnimeCacheRow | null): boolean {
+  if (!row) {
+    return false;
+  }
+  return (
+    Boolean(row.ai_summary?.trim()) &&
+    Boolean(row.why_watch?.trim()) &&
+    Boolean(row.perfect_if_you_like?.trim())
+  );
+}
+
+export function animeCacheRowToAIContent(row: AnimeCacheRow): AnimeAIContent {
+  return {
+    ai_summary: row.ai_summary?.trim() ?? "",
+    why_watch: row.why_watch?.trim() ?? "",
+    perfect_if_you_like: row.perfect_if_you_like?.trim() ?? "",
+    seo_title: row.seo_title?.trim() ?? "",
+    seo_description: row.seo_description?.trim() ?? "",
+  };
+}
+
 /**
  * Until a dedicated trending signal exists in the table, orders by popularity then score.
  */

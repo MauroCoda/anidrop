@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 
 import {
+  animeCacheHasFullAiContent,
+  animeCacheRowToAIContent,
   animeDetailToCacheUpsert,
+  getCachedAnimeById,
   upsertAnimeCache,
 } from "@/src/lib/anime-cache";
 import { getAnimeById } from "@/src/lib/anilist";
-import { generateAnimeAIContent } from "@/src/lib/openai";
+import { generateAnimeAIContent, type AnimeAIContent } from "@/src/lib/openai";
 import { isSupabaseConfigured } from "@/src/lib/supabase";
 
 export const runtime = "nodejs";
@@ -13,6 +16,12 @@ export const runtime = "nodejs";
 type Body = {
   id?: number | string;
 };
+
+type CachePayload =
+  | { status: "hit"; rowId: number }
+  | { status: "ok"; rowId: number }
+  | { status: "skipped"; reason: string }
+  | { status: "error"; message: string; code?: string };
 
 function parseId(body: unknown): number | null {
   if (!body || typeof body !== "object") {
@@ -60,22 +69,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Anime not found." }, { status: 404 });
   }
 
-  let content;
+  let cached = null;
+  if (isSupabaseConfigured()) {
+    cached = await getCachedAnimeById(id);
+  }
+
+  if (cached && animeCacheHasFullAiContent(cached)) {
+    const content: AnimeAIContent = animeCacheRowToAIContent(cached);
+    const cache: CachePayload = { status: "hit", rowId: cached.id };
+    return NextResponse.json({
+      source: "cache" as const,
+      content,
+      cache,
+    });
+  }
+
+  let content: AnimeAIContent;
   try {
     content = await generateAnimeAIContent(anime);
   } catch (e) {
     const message = e instanceof Error ? e.message : "OpenAI request failed";
     const missingKey = message.includes("OPENAI_API_KEY");
     return NextResponse.json(
-      { error: missingKey ? "OpenAI is not configured." : "AI generation failed.", details: message },
+      {
+        error: missingKey ? "OpenAI is not configured." : "AI generation failed.",
+        details: message,
+      },
       { status: missingKey ? 503 : 500 },
     );
   }
 
-  let cache:
-    | { status: "ok"; rowId: number }
-    | { status: "skipped"; reason: string }
-    | { status: "error"; message: string; code?: string };
+  let cache: CachePayload;
 
   if (isSupabaseConfigured()) {
     const payload = animeDetailToCacheUpsert(anime, content);
@@ -92,5 +116,9 @@ export async function POST(request: Request) {
     };
   }
 
-  return NextResponse.json({ content, cache });
+  return NextResponse.json({
+    source: "generated" as const,
+    content,
+    cache,
+  });
 }
