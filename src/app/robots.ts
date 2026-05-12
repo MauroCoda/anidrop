@@ -1,15 +1,17 @@
 import type { MetadataRoute } from "next";
 
-import { getSiteUrl } from "@/src/lib/site";
+import { getCanonicalSiteUrlForSeo } from "@/src/lib/site";
+
+export const dynamic = "force-dynamic";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = getSiteUrl();
+  const base = getCanonicalSiteUrlForSeo();
   return {
     rules: {
       userAgent: "*",
       allow: "/",
       disallow: ["/api/"],
     },
-    ...(base ? { sitemap: new URL("/sitemap.xml", base).href } : {}),
+    sitemap: new URL("/sitemap.xml", base).href,
   };
 }

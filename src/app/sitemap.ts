@@ -5,14 +5,17 @@ import {
   getTrendingAnime,
 } from "@/src/lib/anilist";
 import { animeDetailPath } from "@/src/lib/slugify";
-import { getSiteUrl } from "@/src/lib/site";
+import { getCanonicalSiteUrlForSeo } from "@/src/lib/site";
 import { getGuideSlugs } from "@/src/lib/guides";
 
+/**
+ * Always compute at request time so a bad static bake (empty `getSiteUrl()` at
+ * build) cannot strand `/sitemap.xml` with zero URLs on production.
+ */
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = getSiteUrl();
-  if (!base) {
-    return [];
-  }
+  const base = getCanonicalSiteUrlForSeo();
 
   const home: MetadataRoute.Sitemap = [
     {

@@ -33,3 +33,12 @@ export function getSiteUrl(): URL | undefined {
   }
   return undefined;
 }
+
+/**
+ * Base URL for SEO routes (`sitemap`, `robots`) that must never be empty on
+ * production just because `getSiteUrl()` was unset at build time.
+ * Falls back to {@link siteConfig.url} (`https://anidrop.app`).
+ */
+export function getCanonicalSiteUrlForSeo(): URL {
+  return getSiteUrl() ?? new URL(siteConfig.url);
+}
