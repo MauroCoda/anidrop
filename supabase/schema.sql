@@ -70,3 +70,7 @@ create policy "anime_cache_update_publishable"
   for update
   using (true)
   with check (true);
+
+-- Ensure anon/authenticated can read/write (run if policies exist but reads fail)
+grant usage on schema public to anon, authenticated;
+grant select, insert, update on table public.anime_cache to anon, authenticated;

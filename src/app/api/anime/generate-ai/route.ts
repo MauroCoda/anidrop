@@ -15,6 +15,8 @@ export const runtime = "nodejs";
 
 type Body = {
   id?: number | string;
+  /** Dev-only: bypass cache hit and re-run OpenAI (ignored in production). */
+  regenerate?: boolean;
 };
 
 type CachePayload =
@@ -23,16 +25,24 @@ type CachePayload =
   | { status: "skipped"; reason: string }
   | { status: "error"; message: string; code?: string };
 
-function parseId(body: unknown): number | null {
+function parsePostBody(body: unknown): {
+  id: number | null;
+  forceRegenerate: boolean;
+} {
   if (!body || typeof body !== "object") {
-    return null;
+    return { id: null, forceRegenerate: false };
   }
-  const raw = (body as Body).id;
-  const n = typeof raw === "string" ? Number.parseInt(raw, 10) : Number(raw);
+  const raw = body as Body;
+  const n =
+    typeof raw.id === "string"
+      ? Number.parseInt(raw.id, 10)
+      : Number(raw.id);
   if (!Number.isFinite(n) || n <= 0) {
-    return null;
+    return { id: null, forceRegenerate: false };
   }
-  return Math.floor(n);
+  const forceRegenerate =
+    Boolean(raw.regenerate) && process.env.NODE_ENV === "development";
+  return { id: Math.floor(n), forceRegenerate };
 }
 
 export async function POST(request: Request) {
@@ -46,7 +56,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const id = parseId(body);
+  const { id, forceRegenerate } = parsePostBody(body);
   if (id == null) {
     return NextResponse.json(
       { error: "Provide a positive numeric `id` (AniList media id)." },
@@ -74,7 +84,7 @@ export async function POST(request: Request) {
     cached = await getCachedAnimeById(id);
   }
 
-  if (cached && animeCacheHasFullAiContent(cached)) {
+  if (cached && animeCacheHasFullAiContent(cached) && !forceRegenerate) {
     const content: AnimeAIContent = animeCacheRowToAIContent(cached);
     const cache: CachePayload = { status: "hit", rowId: cached.id };
     return NextResponse.json({

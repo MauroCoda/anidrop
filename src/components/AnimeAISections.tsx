@@ -14,6 +14,8 @@ export type AnimeAIInitialFields = {
 type Props = {
   animeId: number;
   initial: AnimeAIInitialFields;
+  /** True when Supabase already had all three AI fields on SSR (source of truth). */
+  serverCacheComplete: boolean;
 };
 
 function hasFullAi(f: AnimeAIInitialFields): boolean {
@@ -43,12 +45,17 @@ function InsightCard({
   );
 }
 
-export function AnimeAISections({ animeId, initial }: Props) {
+export function AnimeAISections({
+  animeId,
+  initial,
+  serverCacheComplete,
+}: Props) {
   const router = useRouter();
   const [fields, setFields] = useState<AnimeAIInitialFields>(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
+  const [persistedAfterWrite, setPersistedAfterWrite] = useState(false);
 
   const fullFromState = useMemo(() => hasFullAi(fields), [fields]);
 
@@ -60,56 +67,66 @@ export function AnimeAISections({ animeId, initial }: Props) {
     [fields],
   );
 
-  const generate = useCallback(async () => {
-    if (inFlightRef.current) {
-      return;
-    }
-    inFlightRef.current = true;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/anime/generate-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: animeId }),
-      });
-      const body = (await res.json().catch(() => null)) as {
-        error?: string;
-        details?: string;
-        content?: AnimeAIContent;
-        source?: string;
-      } | null;
+  const showAIBadge = useMemo(
+    () =>
+      showAnyCard && (serverCacheComplete || persistedAfterWrite),
+    [persistedAfterWrite, serverCacheComplete, showAnyCard],
+  );
 
-      if (!res.ok || !body?.content) {
-        const msg =
-          typeof body?.error === "string"
-            ? body.error
-            : `Request failed (${res.status})`;
-        const details =
-          typeof body?.details === "string" ? ` ${body.details}` : "";
-        setError(`${msg}${details}`.trim());
+  const generate = useCallback(
+    async (regenerate: boolean) => {
+      if (inFlightRef.current) {
         return;
       }
+      inFlightRef.current = true;
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/anime/generate-ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: animeId, regenerate }),
+        });
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+          details?: string;
+          content?: AnimeAIContent;
+          source?: string;
+        } | null;
 
-      const c = body.content;
-      setFields({
-        ai_summary: c.ai_summary,
-        why_watch: c.why_watch,
-        perfect_if_you_like: c.perfect_if_you_like,
-      });
+        if (!res.ok || !body?.content) {
+          const msg =
+            typeof body?.error === "string"
+              ? body.error
+              : `Request failed (${res.status})`;
+          const details =
+            typeof body?.details === "string" ? ` ${body.details}` : "";
+          setError(`${msg}${details}`.trim());
+          return;
+        }
 
-      const cacheStatus = (body as { cache?: { status?: string } }).cache
-        ?.status;
-      if (cacheStatus === "ok" || cacheStatus === "hit") {
-        router.refresh();
+        const c = body.content;
+        setFields({
+          ai_summary: c.ai_summary,
+          why_watch: c.why_watch,
+          perfect_if_you_like: c.perfect_if_you_like,
+        });
+        setPersistedAfterWrite(true);
+
+        const cacheStatus = (body as { cache?: { status?: string } }).cache
+          ?.status;
+        if (cacheStatus === "ok" || cacheStatus === "hit") {
+          router.refresh();
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Request failed");
+      } finally {
+        setLoading(false);
+        inFlightRef.current = false;
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Request failed");
-    } finally {
-      setLoading(false);
-      inFlightRef.current = false;
-    }
-  }, [animeId, router]);
+    },
+    [animeId, router],
+  );
 
   return (
     <section
@@ -125,7 +142,7 @@ export function AnimeAISections({ animeId, initial }: Props) {
             >
               AI insights
             </h2>
-            {showAnyCard ? (
+            {showAIBadge ? (
               <span className="inline-flex items-center rounded-md border border-violet-500/30 bg-violet-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-200/95">
                 AI Generated
               </span>
@@ -140,7 +157,7 @@ export function AnimeAISections({ animeId, initial }: Props) {
           <div className="shrink-0 sm:pt-0.5">
             <button
               type="button"
-              onClick={() => void generate()}
+              onClick={() => void generate(false)}
               disabled={loading}
               className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-600/90 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-950/30 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-0 sm:py-2"
             >
@@ -155,6 +172,17 @@ export function AnimeAISections({ animeId, initial }: Props) {
               ) : (
                 "Generate AI insights"
               )}
+            </button>
+          </div>
+        ) : process.env.NODE_ENV === "development" ? (
+          <div className="shrink-0 sm:pt-0.5">
+            <button
+              type="button"
+              onClick={() => void generate(true)}
+              disabled={loading}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-amber-500/40 bg-amber-950/40 px-3 py-2 text-[11px] font-semibold text-amber-100 transition hover:bg-amber-900/50 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-0"
+            >
+              {loading ? "Regenerating…" : "Regenerate (dev)"}
             </button>
           </div>
         ) : null}

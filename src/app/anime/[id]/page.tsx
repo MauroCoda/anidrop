@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { AnimeCard } from "@/src/components/AnimeCard";
 import { AnimeAISections } from "@/src/components/AnimeAISections";
 import { SectionHeader } from "@/src/components/SectionHeader";
-import { getCachedAnimeById } from "@/src/lib/anime-cache";
+import { getCachedAnimeById, animeCacheHasFullAiContent } from "@/src/lib/anime-cache";
 import {
   getAnimeById,
   getRecommendedAnime,
@@ -15,6 +15,8 @@ import {
 } from "@/src/lib/anilist";
 import { truncatePlainText } from "@/src/lib/seo";
 import { getSiteUrl } from "@/src/lib/site";
+
+export const dynamic = "force-dynamic";
 
 function buildAnimeDescription(anime: AnimeDetail): string {
   if (anime.description?.trim()) {
@@ -381,6 +383,7 @@ export default async function AnimePage({
               <AnimeAISections
                 key={`${anime.id}-${cached?.ai_updated_at ?? "no-ai"}`}
                 animeId={anime.id}
+                serverCacheComplete={animeCacheHasFullAiContent(cached)}
                 initial={{
                   ai_summary: cached?.ai_summary ?? null,
                   why_watch: cached?.why_watch ?? null,

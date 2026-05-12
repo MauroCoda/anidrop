@@ -1,3 +1,5 @@
+import { unstable_noStore as noStore } from "next/cache";
+
 import type { AnimeDetail } from "@/src/lib/anilist";
 import type { AnimeAIContent } from "@/src/lib/openai";
 import type { AnimeCacheRow, AnimeCacheUpsert } from "@/src/types/anime";
@@ -25,13 +27,19 @@ function mapRow(data: unknown): AnimeCacheRow | null {
     return null;
   }
   const r = data as Record<string, unknown>;
-  const id = typeof r.id === "number" ? r.id : Number(r.id);
+  const rawId = r.id;
+  const id =
+    typeof rawId === "bigint"
+      ? Number(rawId)
+      : typeof rawId === "number"
+        ? rawId
+        : Number(rawId);
   if (!Number.isFinite(id)) {
     return null;
   }
-  const slug = typeof r.slug === "string" ? r.slug : null;
+  let slug = typeof r.slug === "string" ? r.slug.trim() : "";
   if (!slug) {
-    return null;
+    slug = `anime-${id}`;
   }
   const genres = Array.isArray(r.genres)
     ? r.genres.filter((g): g is string => typeof g === "string")
@@ -95,15 +103,17 @@ function normalizeSeason(season: string): string {
 export async function getCachedAnimeById(
   id: number,
 ): Promise<AnimeCacheRow | null> {
+  noStore();
   const supabase = supabaseOrNull();
   if (!supabase || !Number.isFinite(id)) {
     return null;
   }
 
+  const numericId = Math.trunc(Number(id));
   const { data, error } = await supabase
     .from(TABLE)
     .select("*")
-    .eq("id", id)
+    .eq("id", numericId)
     .maybeSingle();
 
   if (error) {
@@ -115,6 +125,7 @@ export async function getCachedAnimeById(
 export async function getCachedAnimeBySlug(
   slug: string,
 ): Promise<AnimeCacheRow | null> {
+  noStore();
   const supabase = supabaseOrNull();
   if (!supabase || !slug.trim()) {
     return null;
@@ -132,6 +143,12 @@ export async function getCachedAnimeBySlug(
   return mapRow(data);
 }
 
+function omitUndefined(record: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(record).filter(([, v]) => v !== undefined),
+  );
+}
+
 export async function upsertAnimeCache(
   anime: AnimeCacheUpsert,
 ): Promise<UpsertAnimeCacheResult> {
@@ -145,17 +162,17 @@ export async function upsertAnimeCache(
   }
 
   const now = new Date().toISOString();
-  const payload: Record<string, unknown> = {
+  const payload: Record<string, unknown> = omitUndefined({
     ...anime,
     genres: anime.genres ?? [],
     updated_at: now,
-  };
+  });
   delete payload.created_at;
   delete payload.updated_at;
 
   const { data, error } = await supabase
     .from(TABLE)
-    .upsert(payload, { onConflict: "id" })
+    .upsert(payload, { onConflict: "id", defaultToNull: false })
     .select("*")
     .single();
 
@@ -179,6 +196,7 @@ export async function getCachedSeasonAnime(
   season: string,
   year: number,
 ): Promise<AnimeCacheRow[]> {
+  noStore();
   const supabase = supabaseOrNull();
   if (!supabase || !Number.isFinite(year)) {
     return [];
@@ -282,6 +300,7 @@ export function animeCacheRowToAIContent(row: AnimeCacheRow): AnimeAIContent {
 export async function getCachedTrendingAnime(
   limit: number,
 ): Promise<AnimeCacheRow[]> {
+  noStore();
   const supabase = supabaseOrNull();
   if (!supabase || limit <= 0) {
     return [];
