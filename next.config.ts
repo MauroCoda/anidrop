@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
         hostname: "img.anilist.co",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "img.anili.st",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.anilist.co",
+        pathname: "/**",
+      },
     ],
   },
 };

@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type KeyboardEvent } from "react";
 
+import { AnimeArtwork } from "@/src/components/AnimeArtwork";
 import { AnimeCard } from "@/src/components/AnimeCard";
 import { AnimeCardSkeletonGrid } from "@/src/components/AnimeCardSkeleton";
 import type { TrendingAnime } from "@/src/lib/anilist";
@@ -211,15 +211,14 @@ export function HomeTrendingClient({ initialTrending }: Props) {
                     role="option"
                   >
                     <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-md border border-white/10 bg-zinc-800">
-                      {anime.coverImage ? (
-                        <Image
-                          src={anime.coverImage}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="40px"
-                        />
-                      ) : null}
+                      <AnimeArtwork
+                        alt={`${anime.title} thumbnail`}
+                        compact={true}
+                        fallbackSrc={anime.bannerImage}
+                        imageClassName="object-cover"
+                        primarySrc={anime.coverImage}
+                        sizes="40px"
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-white">

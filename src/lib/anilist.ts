@@ -5,6 +5,7 @@ export type TrendingAnime = {
   id: number;
   title: string;
   coverImage: string;
+  bannerImage: string | null;
   genres: string[];
   averageScore: number | null;
   format: string | null;
@@ -22,6 +23,7 @@ type MediaNode = {
   coverImage: {
     large: string | null;
   } | null;
+  bannerImage?: string | null;
   genres: string[];
   averageScore: number | null;
   format: string | null;
@@ -47,6 +49,7 @@ function mapMedia(node: MediaNode): TrendingAnime {
     id: node.id,
     title,
     coverImage: node.coverImage?.large?.trim() || "",
+    bannerImage: node.bannerImage?.trim() || null,
     genres: node.genres ?? [],
     averageScore: node.averageScore,
     format: node.format ?? null,
@@ -68,6 +71,7 @@ const TRENDING_QUERY = `
         coverImage {
           large
         }
+        bannerImage
         genres
         averageScore
         format
@@ -127,6 +131,7 @@ const SEARCH_ANIME_QUERY = `
         coverImage {
           large
         }
+        bannerImage
         genres
         averageScore
         format
@@ -192,6 +197,7 @@ const GENRE_POPULAR_QUERY = `
         coverImage {
           large
         }
+        bannerImage
         genres
         averageScore
         format
@@ -285,6 +291,7 @@ const SEASON_ANIME_QUERY = `
         coverImage {
           large
         }
+        bannerImage
         genres
         averageScore
         format
@@ -346,6 +353,7 @@ const ANIME_BY_IDS_QUERY = `
         coverImage {
           large
         }
+        bannerImage
         genres
         averageScore
         format
@@ -438,6 +446,7 @@ const RECOMMENDATIONS_QUERY = `
               coverImage {
                 large
               }
+              bannerImage
               genres
               averageScore
               format

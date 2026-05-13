@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 
+import { AnimeArtwork } from "@/src/components/AnimeArtwork";
 import type { TrendingAnime } from "@/src/lib/anilist";
 import { animeDetailPath } from "@/src/lib/slugify";
 
@@ -83,27 +83,21 @@ export function AnimeCard({
         <div
           className={`relative min-h-0 w-full shrink-0 overflow-hidden bg-zinc-800 ${imageFrame}`}
         >
-          {anime.coverImage ? (
-            <Image
-              src={anime.coverImage}
-              alt=""
-              fill
-              className={`z-0 object-cover ${
-                catalog
-                  ? "transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-                  : "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.045]"
-              }`}
-              sizes={
-                catalog
-                  ? "(max-width: 640px) 45vw, (max-width: 1200px) 18vw, 200px"
-                  : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              }
-            />
-          ) : (
-            <div className="absolute inset-0 z-0 flex items-center justify-center bg-zinc-800 text-xs text-zinc-500">
-              No cover
-            </div>
-          )}
+          <AnimeArtwork
+            alt={`${anime.title} artwork`}
+            fallbackSrc={anime.bannerImage}
+            imageClassName={`z-0 object-cover ${
+              catalog
+                ? "transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+                : "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.045]"
+            }`}
+            primarySrc={anime.coverImage}
+            sizes={
+              catalog
+                ? "(max-width: 640px) 45vw, (max-width: 1200px) 18vw, 200px"
+                : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            }
+          />
 
           <div
             className={`pointer-events-none absolute inset-x-0 top-0 z-[1] bg-gradient-to-b from-black/55 to-transparent ${catalog ? "h-[32%]" : "h-[36%]"}`}
